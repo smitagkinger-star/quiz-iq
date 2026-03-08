@@ -14,28 +14,48 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const typeInstruction = questionType === "mcq"
-      ? "Generate only multiple choice questions."
+      ? "Generate only multiple choice questions with type 'mcq'."
       : questionType === "short_answer"
-        ? "Generate only short answer questions."
-        : "Generate a mix of multiple choice and short answer questions.";
+        ? "Generate only short answer questions with type 'short_answer'."
+        : "Generate a mix of 'mcq' and 'short_answer' questions.";
 
-    const systemPrompt = `You are an expert quiz generator. Generate exactly ${numQuestions} questions about "${topic}" at difficulty level ${difficulty}/6 (1=beginner, 6=expert). ${typeInstruction}
+    const systemPrompt = `You are an expert quiz generator. Generate exactly ${numQuestions} questions about "${topic}" at difficulty level ${difficulty}/6 (1=beginner, 6=expert). ${typeInstruction}`;
 
-Return a JSON object with a "questions" array. Each question must have:
-- "type": "mcq" or "short_answer"
-- "question": the question text
-- "conceptTags": array of 1-3 concept tags
+    const mcqSchema = {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["mcq"] },
+        question: { type: "string" },
+        options: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
+        correctAnswer: { type: "string" },
+        explanation: { type: "string" },
+        conceptTags: { type: "array", items: { type: "string" } },
+      },
+      required: ["type", "question", "options", "correctAnswer", "explanation", "conceptTags"],
+      additionalProperties: false,
+    };
 
-For MCQ questions also include:
-- "options": array of exactly 4 options
-- "correctAnswer": the correct option (must be one of the options)
-- "explanation": brief explanation
+    const shortAnswerSchema = {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["short_answer"] },
+        question: { type: "string" },
+        expectedAnswer: { type: "string" },
+        explanation: { type: "string" },
+        conceptTags: { type: "array", items: { type: "string" } },
+      },
+      required: ["type", "question", "expectedAnswer", "explanation", "conceptTags"],
+      additionalProperties: false,
+    };
 
-For short answer questions also include:
-- "expectedAnswer": the expected answer
-- "explanation": brief explanation
-
-Return ONLY valid JSON, no markdown.`;
+    let itemSchema;
+    if (questionType === "mcq") {
+      itemSchema = mcqSchema;
+    } else if (questionType === "short_answer") {
+      itemSchema = shortAnswerSchema;
+    } else {
+      itemSchema = { oneOf: [mcqSchema, shortAnswerSchema] };
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -47,8 +67,29 @@ Return ONLY valid JSON, no markdown.`;
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate ${numQuestions} ${questionType} questions about ${topic} at difficulty ${difficulty}/6.` },
+          { role: "user", content: `Generate ${numQuestions} questions about ${topic} at difficulty ${difficulty}/6.` },
         ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "return_quiz",
+              description: "Return the generated quiz questions.",
+              parameters: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    items: itemSchema,
+                  },
+                },
+                required: ["questions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "return_quiz" } },
       }),
     });
 
@@ -69,18 +110,15 @@ Return ONLY valid JSON, no markdown.`;
     }
 
     const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content || "";
-
-    // Parse JSON from the response (handle markdown code blocks)
-    let parsed;
-    try {
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-      const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.trim();
-      parsed = JSON.parse(jsonStr);
-    } catch {
-      console.error("Failed to parse AI response:", content);
-      throw new Error("Failed to parse quiz questions");
+    
+    // Extract from tool call
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall) {
+      console.error("No tool call in response:", JSON.stringify(aiData));
+      throw new Error("AI did not return structured output");
     }
+
+    const parsed = JSON.parse(toolCall.function.arguments);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
