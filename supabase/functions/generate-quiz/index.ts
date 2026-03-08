@@ -19,7 +19,9 @@ serve(async (req) => {
         ? "Generate only short answer questions with type 'short_answer'."
         : "Generate a mix of 'mcq' and 'short_answer' questions.";
 
-    const systemPrompt = `You are an expert quiz generator. Generate exactly ${numQuestions} questions about "${topic}" at difficulty level ${difficulty}/6 (1=beginner, 6=expert). ${typeInstruction}`;
+    const systemPrompt = `You are an expert quiz generator. Generate exactly ${numQuestions} questions about "${topic}" at difficulty level ${difficulty}/6 (1=beginner, 6=expert). ${typeInstruction}
+
+CRITICAL: For MCQ questions, the "correctAnswer" field MUST be an EXACT copy of one of the strings in the "options" array. Do not paraphrase or reword it.`;
 
     const mcqSchema = {
       type: "object",
@@ -119,6 +121,30 @@ serve(async (req) => {
     }
 
     const parsed = JSON.parse(toolCall.function.arguments);
+
+    // Normalize: ensure correctAnswer exactly matches one of the options
+    if (parsed.questions) {
+      for (const q of parsed.questions) {
+        if (q.type === "mcq" && q.options && q.correctAnswer) {
+          const exact = q.options.find((o: string) => o === q.correctAnswer);
+          if (!exact) {
+            // Try case-insensitive / trimmed match
+            const match = q.options.find((o: string) =>
+              o.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()
+            );
+            if (match) q.correctAnswer = match;
+            else {
+              // Partial match: find option that contains the answer or vice versa
+              const partial = q.options.find((o: string) =>
+                o.toLowerCase().includes(q.correctAnswer.toLowerCase()) ||
+                q.correctAnswer.toLowerCase().includes(o.toLowerCase())
+              );
+              if (partial) q.correctAnswer = partial;
+            }
+          }
+        }
+      }
+    }
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
