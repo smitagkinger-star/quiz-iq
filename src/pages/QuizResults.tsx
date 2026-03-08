@@ -11,21 +11,30 @@ const QuizResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const state = location.state as { results: QuizResult[]; config: QuizConfig } | null;
   const [saved, setSaved] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
 
-  if (!state) {
-    navigate("/quiz/setup");
-    return null;
-  }
+  const state = location.state as { results: QuizResult[]; config: QuizConfig } | null;
+
+  useEffect(() => {
+    if (!state) {
+      navigate("/quiz/setup");
+    }
+  }, [state, navigate]);
+
+  useEffect(() => {
+    if (user && state && !saved) {
+      saveResults();
+    }
+  }, [user, state, saved]);
+
+  if (!state) return null;
 
   const { results, config } = state;
   const correct = results.filter((r) => r.isCorrect).length;
   const total = results.length;
   const accuracy = Math.round((correct / total) * 100);
 
-  // Weak concepts
   const weakConcepts = Array.from(
     new Set(
       results
@@ -34,7 +43,6 @@ const QuizResults = () => {
     )
   ).slice(0, 5);
 
-  // Learning resources based on weak concepts
   const getResources = () => {
     const resources: { title: string; url: string }[] = [];
     if (weakConcepts.length > 0) {
@@ -56,17 +64,9 @@ const QuizResults = () => {
     return resources;
   };
 
-  // Save results
-  useEffect(() => {
-    if (user && !saved) {
-      saveResults();
-    }
-  }, [user]);
-
   const saveResults = async () => {
-    if (!user) return;
+    if (!user || !state) return;
     try {
-      // Save quiz session
       const { data: session, error: sessionErr } = await supabase
         .from("quiz_sessions")
         .insert({
@@ -81,9 +81,8 @@ const QuizResults = () => {
         .select()
         .single();
 
-      if (sessionErr) throw sessionErr;
+      if (sessionErr || !session) throw sessionErr;
 
-      // Save answers
       const answers = results.map((r) => ({
         session_id: session.id,
         question: r.question.question,
@@ -95,7 +94,6 @@ const QuizResults = () => {
 
       await supabase.from("quiz_answers").insert(answers);
 
-      // Save weak concepts
       if (weakConcepts.length > 0) {
         const concepts = weakConcepts.map((c) => ({
           user_id: user.id,
@@ -125,7 +123,7 @@ const QuizResults = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error || !data) throw error;
       setShareId(data.id);
       const url = `${window.location.origin}/quiz/shared/${data.id}`;
       await navigator.clipboard.writeText(url);
@@ -139,7 +137,6 @@ const QuizResults = () => {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      {/* Score */}
       <div className="quiz-card text-center">
         <div className="text-6xl font-extrabold gradient-text">{accuracy}%</div>
         <p className="mt-2 text-lg font-medium text-foreground">Quiz Complete!</p>
@@ -165,7 +162,6 @@ const QuizResults = () => {
         </div>
       </div>
 
-      {/* Weak Concepts */}
       {weakConcepts.length > 0 && (
         <div className="quiz-card mt-6">
           <h3 className="text-lg font-semibold text-foreground">Concepts to Review</h3>
@@ -177,7 +173,6 @@ const QuizResults = () => {
         </div>
       )}
 
-      {/* Resources */}
       {resources.length > 0 && (
         <div className="quiz-card mt-6">
           <h3 className="text-lg font-semibold text-foreground">Recommended Learning Resources</h3>
@@ -191,7 +186,6 @@ const QuizResults = () => {
         </div>
       )}
 
-      {/* Actions */}
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Button variant="outline" className="flex-1" onClick={() => navigate("/quiz/play", { state: { config } })}>
           <RotateCcw className="mr-2 h-4 w-4" /> Retry Quiz

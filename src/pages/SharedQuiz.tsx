@@ -30,7 +30,7 @@ const SharedQuiz = () => {
       const config: QuizConfig = {
         topic: data.topic,
         difficulty: data.difficulty,
-        questionType: data.question_type,
+        questionType: data.question_type as QuestionType,
         numQuestions: data.num_questions,
       };
 
