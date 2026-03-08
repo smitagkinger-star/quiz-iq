@@ -14,7 +14,140 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quiz_answers: {
+        Row: {
+          concept_tags: string[] | null
+          correct_answer: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          question: string
+          session_id: string
+          user_answer: string
+        }
+        Insert: {
+          concept_tags?: string[] | null
+          correct_answer: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question: string
+          session_id: string
+          user_answer: string
+        }
+        Update: {
+          concept_tags?: string[] | null
+          correct_answer?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question?: string
+          session_id?: string
+          user_answer?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_sessions: {
+        Row: {
+          accuracy: number
+          created_at: string
+          difficulty: number
+          id: string
+          num_questions: number
+          question_type: string
+          score: number
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          created_at?: string
+          difficulty: number
+          id?: string
+          num_questions: number
+          question_type: string
+          score?: number
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          created_at?: string
+          difficulty?: number
+          id?: string
+          num_questions?: number
+          question_type?: string
+          score?: number
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shared_quizzes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          difficulty: number
+          id: string
+          num_questions: number
+          question_type: string
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          difficulty: number
+          id?: string
+          num_questions: number
+          question_type: string
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          difficulty?: number
+          id?: string
+          num_questions?: number
+          question_type?: string
+          topic?: string
+        }
+        Relationships: []
+      }
+      weak_concepts: {
+        Row: {
+          concept: string
+          created_at: string
+          id: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          concept: string
+          created_at?: string
+          id?: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          concept?: string
+          created_at?: string
+          id?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
