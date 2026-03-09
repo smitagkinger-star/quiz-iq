@@ -29,6 +29,15 @@ const QuizResults = () => {
     }
   }, [user, state, saved]);
 
+  useEffect(() => {
+    if (state?.activityId && state.results) {
+      const correct = state.results.filter((r) => r.isCorrect).length;
+      const total = state.results.length;
+      const acc = Math.round((correct / total) * 100);
+      trackQuizCompleted(state.activityId, correct, acc);
+    }
+  }, [state]);
+
   if (!state) return null;
 
   const { results, config } = state;
