@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { trackQuizCompleted } from "@/lib/analytics";
 
 const QuizResults = () => {
   const location = useLocation();
