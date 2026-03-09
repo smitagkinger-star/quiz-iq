@@ -47,6 +47,14 @@ const QuizPlay = () => {
       });
       if (error) throw error;
       setQuestions(data.questions);
+      // Track quiz start (fire-and-forget)
+      trackQuizStarted({
+        topic: config.topic,
+        difficulty: config.difficulty,
+        questionType: config.questionType,
+        numQuestions: config.numQuestions,
+        userId: user?.id,
+      }).then((id) => { activityIdRef.current = id; });
     } catch (err: any) {
       toast.error("Failed to generate quiz. Please try again.");
       console.error(err);
