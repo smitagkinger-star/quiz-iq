@@ -15,7 +15,7 @@ const QuizResults = () => {
   const [saved, setSaved] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
 
-  const state = location.state as { results: QuizResult[]; config: QuizConfig } | null;
+  const state = location.state as { results: QuizResult[]; config: QuizConfig; activityId?: string | null } | null;
 
   useEffect(() => {
     if (!state) {
