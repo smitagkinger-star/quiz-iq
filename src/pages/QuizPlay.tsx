@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +7,13 @@ import { CheckCircle, XCircle, ArrowRight, Loader2 } from "lucide-react";
 import { QuizConfig, QuizQuestion, QuizResult } from "@/lib/topics";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { trackQuizStarted } from "@/lib/analytics";
 
 const QuizPlay = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const config = (location.state as { config: QuizConfig })?.config;
 
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -22,7 +25,7 @@ const QuizPlay = () => {
   const [loading, setLoading] = useState(true);
   const [evaluating, setEvaluating] = useState(false);
   const [currentFeedback, setCurrentFeedback] = useState<{ isCorrect: boolean; score: number; feedback?: string } | null>(null);
-
+  const activityIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!config) {
       navigate("/quiz/setup");
@@ -44,6 +47,14 @@ const QuizPlay = () => {
       });
       if (error) throw error;
       setQuestions(data.questions);
+      // Track quiz start (fire-and-forget)
+      trackQuizStarted({
+        topic: config.topic,
+        difficulty: config.difficulty,
+        questionType: config.questionType,
+        numQuestions: config.numQuestions,
+        userId: user?.id,
+      }).then((id) => { activityIdRef.current = id; });
     } catch (err: any) {
       toast.error("Failed to generate quiz. Please try again.");
       console.error(err);
@@ -106,7 +117,7 @@ const QuizPlay = () => {
       setSubmitted(false);
       setCurrentFeedback(null);
     } else {
-      navigate("/quiz/results", { state: { results, config } });
+      navigate("/quiz/results", { state: { results, config, activityId: activityIdRef.current } });
     }
   };
 

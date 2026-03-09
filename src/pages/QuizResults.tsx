@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { trackQuizCompleted } from "@/lib/analytics";
 
 const QuizResults = () => {
   const location = useLocation();
@@ -14,7 +15,7 @@ const QuizResults = () => {
   const [saved, setSaved] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
 
-  const state = location.state as { results: QuizResult[]; config: QuizConfig } | null;
+  const state = location.state as { results: QuizResult[]; config: QuizConfig; activityId?: string | null } | null;
 
   useEffect(() => {
     if (!state) {
@@ -27,6 +28,15 @@ const QuizResults = () => {
       saveResults();
     }
   }, [user, state, saved]);
+
+  useEffect(() => {
+    if (state?.activityId && state.results) {
+      const correct = state.results.filter((r) => r.isCorrect).length;
+      const total = state.results.length;
+      const acc = Math.round((correct / total) * 100);
+      trackQuizCompleted(state.activityId, correct, acc);
+    }
+  }, [state]);
 
   if (!state) return null;
 
