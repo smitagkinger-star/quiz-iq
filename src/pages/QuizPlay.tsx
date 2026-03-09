@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { CheckCircle, XCircle, ArrowRight, Loader2 } from "lucide-react";
 import { QuizConfig, QuizQuestion, QuizResult } from "@/lib/topics";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { trackQuizStarted } from "@/lib/analytics";
 
 const QuizPlay = () => {
   const location = useLocation();
