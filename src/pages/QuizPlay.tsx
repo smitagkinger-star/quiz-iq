@@ -109,7 +109,7 @@ const QuizPlay = () => {
       setSubmitted(false);
       setCurrentFeedback(null);
     } else {
-      navigate("/quiz/results", { state: { results, config } });
+      navigate("/quiz/results", { state: { results, config, activityId: activityIdRef.current } });
     }
   };
 
