@@ -25,7 +25,7 @@ const QuizPlay = () => {
   const [loading, setLoading] = useState(true);
   const [evaluating, setEvaluating] = useState(false);
   const [currentFeedback, setCurrentFeedback] = useState<{ isCorrect: boolean; score: number; feedback?: string } | null>(null);
-
+  const activityIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!config) {
       navigate("/quiz/setup");
