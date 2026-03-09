@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      quiz_activity: {
+        Row: {
+          accuracy: number | null
+          anonymous_id: string | null
+          completed_at: string | null
+          difficulty: number
+          id: string
+          num_questions: number
+          question_type: string
+          score: number | null
+          started_at: string
+          topic: string
+          user_id: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          anonymous_id?: string | null
+          completed_at?: string | null
+          difficulty: number
+          id?: string
+          num_questions: number
+          question_type: string
+          score?: number | null
+          started_at?: string
+          topic: string
+          user_id?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          anonymous_id?: string | null
+          completed_at?: string | null
+          difficulty?: number
+          id?: string
+          num_questions?: number
+          question_type?: string
+          score?: number | null
+          started_at?: string
+          topic?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       quiz_answers: {
         Row: {
           concept_tags: string[] | null
