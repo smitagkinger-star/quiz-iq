@@ -13,6 +13,7 @@ import { trackQuizStarted } from "@/lib/analytics";
 const QuizPlay = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const config = (location.state as { config: QuizConfig })?.config;
 
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
