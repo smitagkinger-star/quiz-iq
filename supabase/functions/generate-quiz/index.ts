@@ -159,7 +159,7 @@ CRITICAL RULES FOR MCQ QUESTIONS:
     let itemSchema;
     if (questionType === "mcq") itemSchema = mcqSchema;
     else if (questionType === "short_answer") itemSchema = shortAnswerSchema;
-    else itemSchema = { oneOf: [mcqSchema, shortAnswerSchema] };
+    else itemSchema = mixedSchema;
 
     const userPrompt = `Generate ${numQuestions} questions about ${topic} at difficulty ${difficulty}/6.`;
 
