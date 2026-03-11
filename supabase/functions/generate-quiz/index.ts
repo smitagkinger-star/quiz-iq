@@ -132,6 +132,20 @@ const shortAnswerSchema = {
   additionalProperties: false,
 };
 
+const mixedSchema = {
+  type: "object",
+  properties: {
+    type: { type: "string", enum: ["mcq", "short_answer"] },
+    question: { type: "string" },
+    options: { type: "array", items: { type: "string" } },
+    correctAnswer: { type: "string" },
+    expectedAnswer: { type: "string" },
+    explanation: { type: "string" },
+    conceptTags: { type: "array", items: { type: "string" } },
+  },
+  required: ["type", "question", "explanation", "conceptTags"],
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -159,7 +173,7 @@ CRITICAL RULES FOR MCQ QUESTIONS:
     let itemSchema;
     if (questionType === "mcq") itemSchema = mcqSchema;
     else if (questionType === "short_answer") itemSchema = shortAnswerSchema;
-    else itemSchema = { oneOf: [mcqSchema, shortAnswerSchema] };
+    else itemSchema = mixedSchema;
 
     const userPrompt = `Generate ${numQuestions} questions about ${topic} at difficulty ${difficulty}/6.`;
 
